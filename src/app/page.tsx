@@ -7,7 +7,7 @@ export default async function Home(props: { searchParams: Promise<{ [key: string
     <div className="flex flex-col w-full">
 
       {/* Hero Section Container */}
-      <div className="relative min-h-screen flex items-center justify-center -mt-16 w-full">
+      <div className="relative min-h-screen flex items-center justify-center -mt-24 pt-24 pb-12 w-full">
         <ParallaxBlocks />
         <HeroClient />
       </div>
