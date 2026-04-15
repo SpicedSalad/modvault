@@ -490,7 +490,7 @@ export function InteractiveCreeper({ onExplode }: { onExplode?: () => void }) {
 
   return (
     <div 
-      className={`relative w-full h-[500px] flex items-center justify-center`}
+      className={`relative w-full h-[350px] md:h-[500px] flex items-center justify-center`}
       style={{ position: "relative", transform: "translateZ(0)" }}
     >
       <div className="absolute top-4 left-4 z-10 font-pixel text-zinc-500/60 text-xs pointer-events-none select-none tracking-widest animate-pulse">

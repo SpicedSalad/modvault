@@ -46,7 +46,7 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
         <div className="flex items-center space-x-0">
           <Link href="/" className="flex items-center group">
-            <div className="relative w-96 h-24">
+            <div className="relative w-48 h-12 sm:w-64 sm:h-16 md:w-96 md:h-24">
               <Image 
                 src="/logo_v2.png" 
                 alt="ModVault Logo" 

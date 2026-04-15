@@ -80,7 +80,7 @@ export function HeroClient() {
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
-        className="md:w-1/2 text-center md:text-left flex flex-col items-center md:items-start space-y-6 scale-90 origin-top md:origin-left xl:scale-100"
+        className="md:w-1/2 text-center md:text-left flex flex-col items-center md:items-start space-y-6 scale-90 origin-top md:origin-left xl:scale-100 mt-4 md:mt-0"
       >
         <h1 className="text-4xl sm:text-5xl lg:text-7xl font-pixel font-normal text-white leading-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)]">
           MODERN <br/> 
