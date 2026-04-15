@@ -66,7 +66,7 @@ export function HeroClient() {
   }, [showDeathScreen]);
 
   return (
-    <div className="relative z-10 w-full max-w-7xl px-4 mx-auto flex flex-col md:flex-row items-center justify-between">
+    <div className="relative z-10 w-full max-w-7xl px-4 mx-auto flex flex-col md:flex-row items-center justify-between scale-90 origin-top md:origin-center xl:scale-100">
       <motion.div 
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
