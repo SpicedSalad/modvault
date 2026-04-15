@@ -1,22 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Buttons";
-import { ModEditModal } from "@/components/ModEditModal";
+import { ModEditModal, TweakSaveData } from "@/components/ModEditModal";
 import { TaggingSystem } from "@/components/TaggingSystem";
-import { Database } from "@/types/supabase";
-import { convertDriveLink } from "@/lib/utils";
+import { Database, Tag, TweakFileForm, Json } from "@/types/supabase";
 import { Edit2, Trash2 } from "lucide-react";
 import Link from "next/link";
 
-type Tweak = Database['public']['Tables']['tweaks']['Row'];
-
-interface Tag {
-  id: string;
-  name: string;
-  customDescription?: string;
-}
+type Tweak = Database['public']['Tables']['tweaks']['Row'] & { tweak_files?: Database['public']['Tables']['tweak_files']['Row'][] };
 
 export default function DashboardPage() {
   const [tweaks, setTweaks] = useState<Tweak[]>([]);
@@ -31,16 +24,16 @@ export default function DashboardPage() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<'Mod' | 'Datapack' | 'Resource Pack' | 'Shader'>("Mod");
   const [tags, setTags] = useState<Tag[]>([]);
-  const [driveLink, setDriveLink] = useState("");
+  const [tweakFiles, setTweakFiles] = useState<TweakFileForm[]>([{ mc_version: "", loader_type: "", download_url: "" }]);
   const [imageLinks, setImageLinks] = useState(""); // Comma separated
 
   const supabase = createClient();
 
-  const fetchTweaks = async (uid: string) => {
-    const { data } = await supabase.from("tweaks").select("*").eq("user_id", uid).order("created_at", { ascending: false });
+  const fetchTweaks = useCallback(async (uid: string) => {
+    const { data } = await supabase.from("tweaks").select("*, tweak_files(*)").eq("user_id", uid).order("created_at", { ascending: false });
     if (data) setTweaks(data);
     setLoading(false);
-  };
+  }, [supabase]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -51,14 +44,14 @@ export default function DashboardPage() {
         fetchTweaks(user.id);
       }
     });
-  }, []);
+  }, [supabase, fetchTweaks]);
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
 
     try {
-      const tagsArray = tags.map(t => ({ name: t.name, customDescription: t.customDescription }));
+      const tagsArray = tags.map(t => ({ name: t.name, customDescription: t.customDescription })) as Json[];
       
       const { data: tweakData, error: tweakError } = await supabase
         .from("tweaks")
@@ -67,13 +60,27 @@ export default function DashboardPage() {
           title,
           description,
           category,
-          drive_link: driveLink,
           tags: tagsArray
         })
         .select()
         .single();
 
       if (tweakError) throw tweakError;
+
+      // Handle tweak files
+      if (tweakFiles.length > 0 && tweakData) {
+        const fileInserts = tweakFiles.map(file => ({
+          tweak_id: tweakData.id,
+          mc_version: file.mc_version,
+          loader_type: file.loader_type,
+          download_url: file.download_url
+        })).filter(f => f.download_url);
+
+        if (fileInserts.length > 0) {
+          const { error: filesError } = await supabase.from("tweak_files").insert(fileInserts);
+          if (filesError) throw filesError;
+        }
+      }
 
       // Handle images
       const imagesArray = imageLinks.split(",").map(l => l.trim()).filter(Boolean);
@@ -90,7 +97,7 @@ export default function DashboardPage() {
       setTitle("");
       setDescription("");
       setTags([]);
-      setDriveLink("");
+      setTweakFiles([{ mc_version: "", loader_type: "", download_url: "" }]);
       setImageLinks("");
       
       fetchTweaks(userId);
@@ -106,27 +113,42 @@ export default function DashboardPage() {
     setIsEditModalOpen(true);
   };
 
-  const handleSaveEditedTweak = async (updatedData: Partial<Tweak> & { tags: Tag[] }) => {
+  const handleSaveEditedTweak = async (updatedData: TweakSaveData) => {
     if (!editingTweak || !userId) return;
 
     setIsEditingSaving(true);
     try {
-      const tagsArray = updatedData.tags.map(t => ({ name: t.name, customDescription: t.customDescription }));
+      const tagsArray = updatedData.tags.map(t => ({ name: t.name, customDescription: t.customDescription })) as Json[];
       
       const { error: updateError } = await supabase
         .from("tweaks")
         .update({
           title: updatedData.title,
           description: updatedData.description,
-          category: updatedData.category,
-          minecraft_version: updatedData.minecraft_version,
-          loader_type: updatedData.loader_type,
-          drive_link: updatedData.drive_link,
+          category: updatedData.category as any,
           tags: tagsArray,
         })
         .eq("id", editingTweak.id);
 
       if (updateError) throw updateError;
+
+      // Atomic array sync for files: wipe and replace
+      const { error: deleteError } = await supabase.from("tweak_files").delete().eq("tweak_id", editingTweak.id);
+      if (deleteError) throw deleteError;
+      
+      if (updatedData.tweak_files && updatedData.tweak_files.length > 0) {
+          const fileInserts = updatedData.tweak_files.map(file => ({
+            tweak_id: editingTweak.id,
+            mc_version: file.mc_version,
+            loader_type: file.loader_type,
+            download_url: file.download_url
+          })).filter(f => f.download_url);
+    
+          if (fileInserts.length > 0) {
+            const { error: filesError } = await supabase.from("tweak_files").insert(fileInserts);
+            if (filesError) throw filesError;
+          }
+      }
 
       setIsEditModalOpen(false);
       setEditingTweak(null);
@@ -171,7 +193,7 @@ export default function DashboardPage() {
             href="/profile/edit" 
             className="px-5 py-2 bg-gradient-to-r from-yellow-500 to-amber-500 border border-yellow-400/60 text-black rounded-sm font-pixel text-xs font-bold hover:from-yellow-400 hover:to-amber-400 transition-all shadow-[0_0_20px_rgba(250,204,21,0.5)] whitespace-nowrap"
           >
-            ⚙️ SETTINGS
+            SETTINGS
           </Link>
         </div>
 
@@ -231,17 +253,73 @@ export default function DashboardPage() {
                   <TaggingSystem selectedTags={tags} onChange={setTags} />
                 </div>
 
-                {/* File Link */}
-                <div>
-                  <label className="block text-white text-xs font-pixel mb-2 uppercase tracking-wide">Download Link</label>
-                  <input 
-                    required 
-                    type="url" 
-                    value={driveLink} 
-                    onChange={e => setDriveLink(e.target.value)} 
-                    placeholder="https://..."
-                    className="w-full px-3 py-2.5 border border-white/10 bg-black/50 text-white placeholder-gray-600 focus:outline-none focus:border-grass focus:ring-1 focus:ring-grass focus:shadow-[0_0_15px_rgba(63,186,84,0.4)] backdrop-blur-md rounded-sm transition-all duration-300 text-sm"
-                  />
+                {/* Tweak Files Array */}
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="block text-white text-xs font-pixel uppercase tracking-wide">Download Versions</label>
+                    <button 
+                      type="button" 
+                      onClick={() => setTweakFiles([...tweakFiles, { mc_version: "", loader_type: "", download_url: "" }])}
+                      className="text-xs font-pixel text-grass hover:text-emerald-400"
+                    >
+                      + ADD ANOTHER
+                    </button>
+                  </div>
+                  
+                  {tweakFiles.map((file, i) => (
+                    <div key={i} className="p-4 border border-white/10 bg-black/30 rounded-sm relative group overflow-hidden">
+                      {tweakFiles.length > 1 && (
+                        <button 
+                          type="button" 
+                          onClick={() => setTweakFiles(tweakFiles.filter((_, idx) => idx !== i))}
+                          className="absolute top-2 right-2 text-gray-500 hover:text-red-500 transition-colors z-10"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <input
+                          required
+                          placeholder="MC Version (eg. 1.20.1)"
+                          value={file.mc_version}
+                          onChange={e => {
+                            const newFiles = [...tweakFiles];
+                            newFiles[i].mc_version = e.target.value;
+                            setTweakFiles(newFiles);
+                          }}
+                          className="w-full px-3 py-2 border border-white/10 bg-black/50 text-white placeholder-gray-600 focus:outline-none focus:border-grass focus:ring-1 focus:ring-grass rounded-sm text-sm"
+                        />
+                        <select
+                          required
+                          value={file.loader_type}
+                          onChange={e => {
+                            const newFiles = [...tweakFiles];
+                            newFiles[i].loader_type = e.target.value;
+                            setTweakFiles(newFiles);
+                          }}
+                          className="w-full px-3 py-2 border border-white/10 bg-black/50 text-white focus:outline-none focus:border-grass focus:ring-1 focus:ring-grass rounded-sm text-sm"
+                        >
+                          <option value="">Loader...</option>
+                          <option value="Fabric">Fabric</option>
+                          <option value="Forge">Forge</option>
+                          <option value="NeoForge">NeoForge</option>
+                          <option value="Quilt">Quilt</option>
+                        </select>
+                      </div>
+                      <input 
+                        required 
+                        type="url" 
+                        value={file.download_url} 
+                        onChange={e => {
+                          const newFiles = [...tweakFiles];
+                          newFiles[i].download_url = e.target.value;
+                          setTweakFiles(newFiles);
+                        }} 
+                        placeholder="Google Drive Link..."
+                        className="w-full px-3 py-2 border border-white/10 bg-black/50 text-white placeholder-gray-600 focus:outline-none focus:border-grass focus:ring-1 focus:ring-grass rounded-sm text-sm"
+                      />
+                    </div>
+                  ))}
                 </div>
 
                 {/* Image Links */}
@@ -276,7 +354,9 @@ export default function DashboardPage() {
 
               {tweaks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="text-6xl mb-4 opacity-20">📦</div>
+                  <div className="w-16 h-16 mb-4 opacity-20 border-2 border-gray-600 flex items-center justify-center">
+                    <span className="font-pixel text-3xl text-gray-500">?</span>
+                  </div>
                   <p className="text-gray-400 font-sans text-sm mb-2">No uploads yet</p>
                   <p className="text-gray-500 font-sans text-xs">Create your first mod upload above</p>
                 </div>
@@ -300,9 +380,10 @@ export default function DashboardPage() {
                             <span className="text-gray-500 font-sans text-xs">
                               {new Date(tweak.created_at).toLocaleDateString()}
                             </span>
-                            {tweak.minecraft_version && (
-                              <span className="text-gray-500 font-sans text-xs">
-                                v{tweak.minecraft_version}
+                            {tweak.tweak_files && tweak.tweak_files.length > 0 && (
+                              <span className="text-gray-500 font-sans text-xs flex gap-1">
+                                {tweak.tweak_files.slice(0,3).map(f => `v${f.mc_version}`).join(', ')}
+                                {tweak.tweak_files.length > 3 && '...'}
                               </span>
                             )}
                           </div>

@@ -25,18 +25,31 @@ export function DefaultBlockPlaceholder() {
 
         {/* Front dirt face */}
         <div className="absolute top-8 left-0 right-0 h-16 bg-gradient-to-b from-[#9B7653] to-[#8B6F47]">
-          {/* Dirt texture dots */}
+          {/* Dirt texture dots (deterministic positions) */}
           <div className="absolute inset-0 opacity-30">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-1 h-1 bg-[#6B4A27]"
-                style={{
-                  left: `${Math.random() * 128}px`,
-                  top: `${Math.random() * 64}px`,
-                }}
-              />
-            ))}
+            {Array.from({ length: 20 }).map((_, i) => {
+              // simple deterministic pseudo-random based on index
+              const seed = (i + 1) * 9301 + 49297;
+              const rand = (n: number) => {
+                // linear congruential generator
+                let s = seed + n;
+                s = (s * 1664525 + 1013904223) % 4294967296;
+                return (s % 10000) / 10000; // 0..0.9999
+              };
+              const left = Math.floor(rand(i) * 128);
+              const top = Math.floor(rand(i + 3) * 64);
+
+              return (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 bg-[#6B4A27]"
+                  style={{
+                    left: `${left}px`,
+                    top: `${top}px`,
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
 

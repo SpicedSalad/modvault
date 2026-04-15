@@ -4,34 +4,27 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { TaggingSystem } from "./TaggingSystem";
-import { Database } from "@/types/supabase";
+import { Database, Tag, TweakFileForm } from "@/types/supabase";
 
-type Tweak = Database["public"]["Tables"]["tweaks"]["Row"];
+type Tweak = Database["public"]["Tables"]["tweaks"]["Row"] & { tweak_files?: Database['public']['Tables']['tweak_files']['Row'][] };
 
-interface Tag {
-  id: string;
-  name: string;
-  customDescription?: string;
+export interface TweakSaveData {
+  title: string;
+  description: string;
+  category: string;
+  tags: Tag[];
+  tweak_files: TweakFileForm[];
 }
 
 interface ModEditModalProps {
   isOpen: boolean;
   tweak: Tweak | null;
   onClose: () => void;
-  onSave: (updatedTweak: Partial<Tweak> & { tags: Tag[] }) => Promise<void>;
+  onSave: (updatedTweak: TweakSaveData) => Promise<void>;
   isLoading?: boolean;
 }
 
 const LOADERS = ["Forge", "Fabric", "Quilt", "NeoForge"];
-const MINECRAFT_VERSIONS = [
-  "1.20.1",
-  "1.20",
-  "1.19.2",
-  "1.19.1",
-  "1.19",
-  "1.18.2",
-  "1.17.1",
-];
 
 export function ModEditModal({
   isOpen,
@@ -44,10 +37,8 @@ export function ModEditModal({
     title: "",
     description: "",
     category: "Mod" as const,
-    minecraft_version: "",
-    loader_type: "",
-    drive_link: "",
     tags: [] as Tag[],
+    tweak_files: [{ mc_version: "", loader_type: "", download_url: "" }] as TweakFileForm[]
   });
 
   useEffect(() => {
@@ -56,9 +47,6 @@ export function ModEditModal({
         title: tweak.title || "",
         description: tweak.description || "",
         category: tweak.category as any,
-        minecraft_version: tweak.minecraft_version || "",
-        loader_type: tweak.loader_type || "",
-        drive_link: tweak.drive_link || "",
         tags: Array.isArray(tweak.tags)
           ? tweak.tags.map((tag: any, idx: number) => ({
               id: `tag-${idx}`,
@@ -67,6 +55,9 @@ export function ModEditModal({
                 typeof tag === "string" ? "" : tag.customDescription,
             }))
           : [],
+        tweak_files: tweak.tweak_files && tweak.tweak_files.length > 0 
+          ? tweak.tweak_files.map(f => ({ mc_version: f.mc_version, loader_type: f.loader_type, download_url: f.download_url }))
+          : [{ mc_version: "", loader_type: "", download_url: "" }]
       });
     }
   }, [tweak, isOpen]);
@@ -160,69 +151,81 @@ export function ModEditModal({
                 </select>
               </div>
 
-              {/* Minecraft Version & Loader */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-pixel text-white mb-2">
-                    Minecraft Version
-                  </label>
-                  <select
-                    value={formData.minecraft_version}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        minecraft_version: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-2 bg-black/40 border border-white/20 text-white rounded focus:outline-none focus:border-grass focus:ring-1 focus:ring-grass font-sans"
+              {/* Tweak Files Array */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-pixel text-white">Download Versions</label>
+                  <button 
+                    type="button" 
+                    onClick={() => setFormData({ ...formData, tweak_files: [...formData.tweak_files, { mc_version: "", loader_type: "", download_url: "" }] })}
+                    className="text-xs font-pixel text-grass hover:text-emerald-400"
                   >
-                    <option value="">Select version...</option>
-                    {MINECRAFT_VERSIONS.map((v) => (
-                      <option key={v} value={v}>
-                        {v}
-                      </option>
-                    ))}
-                  </select>
+                    + ADD ANOTHER
+                  </button>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-pixel text-white mb-2">
-                    Loader Type
-                  </label>
-                  <select
-                    value={formData.loader_type}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        loader_type: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-2 bg-black/40 border border-white/20 text-white rounded focus:outline-none focus:border-grass focus:ring-1 focus:ring-grass font-sans"
-                  >
-                    <option value="">Select loader...</option>
-                    {LOADERS.map((l) => (
-                      <option key={l} value={l}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Drive Link */}
-              <div>
-                <label className="block text-sm font-pixel text-white mb-2">
-                  Download Link
-                </label>
-                <input
-                  type="url"
-                  value={formData.drive_link}
-                  onChange={(e) =>
-                    setFormData({ ...formData, drive_link: e.target.value })
-                  }
-                  className="w-full px-4 py-2 bg-black/40 border border-white/20 text-white rounded focus:outline-none focus:border-grass focus:ring-1 focus:ring-grass font-sans"
-                  placeholder="https://..."
-                />
+                
+                {formData.tweak_files.map((file, i) => (
+                  <div key={i} className="p-4 border border-white/20 bg-black/40 rounded relative group">
+                    {formData.tweak_files.length > 1 && (
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const newFiles = formData.tweak_files.filter((_, idx) => idx !== i);
+                          setFormData({ ...formData, tweak_files: newFiles });
+                        }}
+                        className="absolute top-2 right-2 text-white/50 hover:text-red-500 transition-colors z-10 hidden group-hover:block"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <input
+                          required
+                          placeholder="MC Version (eg. 1.20.1)"
+                          value={file.mc_version}
+                          onChange={e => {
+                            const newFiles = [...formData.tweak_files];
+                            newFiles[i].mc_version = e.target.value;
+                            setFormData({ ...formData, tweak_files: newFiles });
+                          }}
+                          className="w-full px-4 py-2 bg-black/40 border border-white/20 text-white rounded focus:outline-none focus:border-grass focus:ring-1 focus:ring-grass font-sans text-sm"
+                        />
+                      </div>
+                      <div>
+                        <select
+                          required
+                          value={file.loader_type}
+                          onChange={e => {
+                            const newFiles = [...formData.tweak_files];
+                            newFiles[i].loader_type = e.target.value;
+                            setFormData({ ...formData, tweak_files: newFiles });
+                          }}
+                          className="w-full px-4 py-2 bg-black/40 border border-white/20 text-white rounded focus:outline-none focus:border-grass focus:ring-1 focus:ring-grass font-sans text-sm"
+                        >
+                          <option value="">Select loader...</option>
+                          {LOADERS.map(l => (
+                            <option key={l} value={l}>{l}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <input 
+                        required 
+                        type="url" 
+                        value={file.download_url} 
+                        onChange={e => {
+                          const newFiles = [...formData.tweak_files];
+                          newFiles[i].download_url = e.target.value;
+                          setFormData({ ...formData, tweak_files: newFiles });
+                        }} 
+                        placeholder="Google Drive Link..."
+                        className="w-full px-4 py-2 bg-black/40 border border-white/20 text-white rounded focus:outline-none focus:border-grass focus:ring-1 focus:ring-grass font-sans text-sm"
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Tagging System */}

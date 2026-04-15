@@ -42,9 +42,9 @@ export function CreeperDeathScreen({ isVisible, onRespawn }: CreeperDeathScreenP
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.4 }}
-                className="font-minecraftia text-5xl text-red-400 drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)]"
+                className="font-pixel text-5xl text-red-400 drop-shadow-[0_4px_8px_rgba(0,0,0,0.9)]"
               >
-                ☠ FAILED ☠
+                You Died
               </motion.h1>
               <motion.p
                 initial={{ y: 20, opacity: 0 }}
@@ -66,15 +66,15 @@ export function CreeperDeathScreen({ isVisible, onRespawn }: CreeperDeathScreenP
               {/* Respawn Button */}
               <button
                 onClick={onRespawn}
-                className="px-8 py-3 bg-gradient-to-b from-green-600 to-green-700 border-2 border-green-800 text-white font-pixel hover:from-green-500 hover:to-green-600 transition-all duration-200 shadow-[0_4px_8px_rgba(0,0,0,0.6)] hover:shadow-[0_6px_12px_rgba(34,197,94,0.4)]"
+                className="w-full flex justify-center items-center px-8 py-3 bg-[#c6c6c6] text-[#222222] font-pixel border-pixel transition-colors duration-200 hover:bg-grass hover:text-white active:translate-y-1"
               >
-                Respawn
+                <span className="mt-1">Respawn</span>
               </button>
 
               {/* Title Screen Button */}
-              <Link href="/discover" className="w-full">
-                <button className="w-full px-8 py-3 bg-gradient-to-b from-gray-700 to-gray-800 border-2 border-gray-900 text-white font-pixel hover:from-gray-600 hover:to-gray-700 transition-all duration-200 shadow-[0_4px_8px_rgba(0,0,0,0.6)] hover:shadow-[0_6px_12px_rgba(0,0,0,0.8)]">
-                  Title Screen
+              <Link href="/discover" className="w-full block mt-2">
+                <button className="w-full flex justify-center items-center px-8 py-3 bg-[#c6c6c6] text-[#222222] font-pixel border-pixel transition-colors duration-200 hover:bg-grass hover:text-white active:translate-y-1">
+                  <span className="mt-1">Title Screen</span>
                 </button>
               </Link>
             </motion.div>

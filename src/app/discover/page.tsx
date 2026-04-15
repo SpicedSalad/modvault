@@ -1,12 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { ModCard } from "@/components/ModCard";
 import { DiscoverFilters } from "./DiscoverFilters";
+import { parseTag } from "@/lib/utils";
 
 export default async function DiscoverPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const searchParams = await props.searchParams;
   const category = searchParams.category as string;
   const sort = searchParams.sort as string || "upvotes";
   const search = searchParams.search as string;
+  const loader = searchParams.loader as string;
   
   const supabase = await createClient();
 
@@ -15,19 +17,40 @@ export default async function DiscoverPage(props: { searchParams: Promise<{ [key
     images ( drive_image_url ),
     comments ( id ),
     votes ( vote_value )
+    ${loader ? ', tweak_files!inner(loader_type)' : ''}
   `);
 
   if (category) {
     query = query.eq("category", category);
   }
 
-  if (search) {
-    query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+  // search handled locally below for tag support
+
+  if (loader) {
+    query = query.eq("tweak_files.loader_type", loader);
   }
 
   const { data: rawTweaks, error } = await query;
   
   let tweaks = rawTweaks ? [...rawTweaks] : [];
+  
+  if (search) {
+    const s = search.toLowerCase();
+    tweaks = tweaks.filter((t: any) => {
+      // It already matched title/description in DB OR it might match a tag.
+      // Wait, if it matched title/desc in DB, it will be in tweaks.
+      // But we modified the DB query to `.or(...)`. If the DB filtered out rows without title/desc match,
+      // it would miss tweaks that ONLY match by tag.
+      // So we should remove `.or(...)` from DB query if we want to search tags locally, OR we keep it and just accept we only search tags on already-matched tweaks.
+      // We will remove `.or` from DB query below.
+      
+      const titleMatch = t.title?.toLowerCase().includes(s);
+      const descMatch = t.description?.toLowerCase().includes(s);
+      const tagMatch = t.tags?.some((tagRaw: string) => parseTag(tagRaw).toLowerCase().includes(s));
+      
+      return titleMatch || descMatch || tagMatch;
+    });
+  }
   
   // Sort heavily computed metric results natively on the Server Node instance
   tweaks.sort((a: any, b: any) => {

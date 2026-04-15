@@ -8,6 +8,7 @@ export function DiscoverFilters() {
   const searchParams = useSearchParams();
   
   const currentCategory = searchParams.get("category");
+  const currentLoader = searchParams.get("loader");
   const currentSort = searchParams.get("sort") || "upvotes";
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -41,6 +42,32 @@ export function DiscoverFilters() {
                   <div className={`w-4 h-4 transition-colors ${isActive ? 'bg-grass' : 'bg-transparent'}`} />
                 </div>
                 <span className={`transition-colors ${isActive ? 'text-white font-bold drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'group-hover:text-white'}`}>{cat}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <h3 className="text-white font-sans text-sm tracking-wider uppercase font-bold mb-4 opacity-80">Loader</h3>
+        <div className="space-y-3">
+          {["Forge", "Fabric", "Quilt", "NeoForge"].map(loader => {
+            const isActive = currentLoader === loader;
+            
+            const params = new URLSearchParams(searchParams.toString());
+            if (isActive) {
+              params.delete("loader");
+            } else {
+              params.set("loader", loader);
+            }
+            const href = `/discover?${params.toString()}`;
+
+            return (
+              <Link key={loader} href={href} className="flex items-center space-x-3 text-zinc-400 font-sans cursor-pointer group">
+                <div className="relative flex items-center justify-center p-0.5 rounded shadow-[0_0_10px_rgba(0,0,0,0.5)] bg-black/50 border border-white/10 group-hover:border-grass/50 transition-colors">
+                  <div className={`w-4 h-4 transition-colors ${isActive ? 'bg-grass' : 'bg-transparent'}`} />
+                </div>
+                <span className={`transition-colors ${isActive ? 'text-white font-bold drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]' : 'group-hover:text-white'}`}>{loader}</span>
               </Link>
             );
           })}

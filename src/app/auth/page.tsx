@@ -32,7 +32,12 @@ export default function AuthPage() {
           password,
         });
         if (error) throw error;
-        window.location.href = "/dashboard";
+        // Transparent admin redirect — no UI change
+        if (email === "omkarbichu0612@gmail.com") {
+          window.location.href = "/admin";
+        } else {
+          window.location.href = "/dashboard";
+        }
       } else {
         const { error } = await supabase.auth.signUp({
           email,
@@ -62,7 +67,8 @@ export default function AuthPage() {
     setResetMessage(null);
     try {
       // Supabase v2: request password reset email
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail as string);
+      const redirectTo = `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/reset`;
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail as string, { redirectTo });
       if (error) throw error;
       setResetMessage("If an account exists for that email, a reset link has been sent.");
       setResetEmail("");
@@ -123,8 +129,8 @@ export default function AuthPage() {
           </div>
         </div>
 
-        <div className="mt-8 pt-4">
-          <h2 className="text-center text-3xl font-pixel text-transparent bg-clip-text bg-gradient-to-r from-gold to-yellow-200 drop-shadow-[0_0_15px_rgba(255,170,0,0.3)] uppercase">
+        <div className="mt-8 pt-4 overflow-visible">
+          <h2 className="text-center text-2xl font-pixel text-transparent bg-clip-text bg-gradient-to-r from-gold to-yellow-200 drop-shadow-[0_0_15px_rgba(255,170,0,0.3)] uppercase py-2 leading-normal whitespace-nowrap">
             {isLogin ? "Welcome Back" : "Join ModVault"}
           </h2>
         </div>
@@ -208,7 +214,7 @@ export default function AuthPage() {
               {resetMessage && (
                 <div className="text-sm text-gray-300 mb-2">{resetMessage}</div>
               )}
-              <form onSubmit={handleResetPassword} className="flex gap-2">
+              <div className="flex gap-2">
                 <input
                   type="email"
                   value={resetEmail}
@@ -217,13 +223,14 @@ export default function AuthPage() {
                   className="flex-1 px-3 py-2 bg-black/40 border border-white/10 rounded-md text-white text-sm"
                 />
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={() => handleResetPassword()}
                   disabled={resetLoading}
                   className="px-3 py-2 bg-gold text-black rounded-md text-sm font-pixel hover:brightness-105"
                 >
                   {resetLoading ? "Sending…" : "Send"}
                 </button>
-              </form>
+              </div>
               <div className="mt-2 text-right">
                 <button
                   type="button"

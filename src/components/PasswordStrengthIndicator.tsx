@@ -7,159 +7,116 @@ interface PasswordStrengthProps {
 }
 
 export function PasswordStrengthIndicator({ password }: PasswordStrengthProps) {
-  const strength = useMemo(() => {
-    if (!password) return { level: 0, label: "", armorType: "none" };
-
+  const strengthLevel = useMemo(() => {
+    if (!password) return 0;
     let score = 0;
-
-    // Length check
-    if (password.length >= 8) score += 20;
-    if (password.length >= 12) score += 10;
-    if (password.length >= 16) score += 10;
-
-    // Character variety
-    if (/[a-z]/.test(password)) score += 10;
-    if (/[A-Z]/.test(password)) score += 10;
-    if (/[0-9]/.test(password)) score += 10;
-    if (/[!@#$%^&*()_+\-=\[\]{};:'",.<>?\/\\|`~]/.test(password)) score += 20;
-
-    // Determine armor type and label
-    if (score <= 20) return { level: 1, label: "Weak", armorType: "leather", score };
-    if (score <= 40) return { level: 2, label: "Fair", armorType: "chain", score };
-    if (score <= 60) return { level: 3, label: "Good", armorType: "iron", score };
-    if (score <= 80) return { level: 4, label: "Strong", armorType: "diamond", score };
-    return { level: 5, label: "Very Strong", armorType: "netherite", score };
+    if (password.length >= 8)  score += 2;
+    if (password.length >= 12) score += 2;
+    if (/[a-z]/.test(password)) score += 1;
+    if (/[A-Z]/.test(password)) score += 2;
+    if (/[0-9]/.test(password)) score += 1;
+    if (/[!@#$%^&*()_+\-=\[\]{};:'",.<>?\/\\|`~]/.test(password)) score += 2;
+    return Math.min(10, score);
   }, [password]);
 
-  if (!password) return null;
+  const label      = strengthLevel > 7 ? "Strong" : strengthLevel > 4 ? "Good" : "Weak";
+  const labelColor = strengthLevel > 7 ? "#55FF55" : strengthLevel > 4 ? "#FFFF55" : "#FF5555";
 
   return (
-    <div className="space-y-3">
-      {/* Armor Pieces Display */}
-      <div className="flex gap-2 justify-center">
-        {/* Helmet */}
-        <ArmorPiece type={strength.armorType} piece="helmet" filled={strength.level >= 1} />
-        {/* Chestplate */}
-        <ArmorPiece type={strength.armorType} piece="chestplate" filled={strength.level >= 2} />
-        {/* Leggings */}
-        <ArmorPiece type={strength.armorType} piece="leggings" filled={strength.level >= 3} />
-        {/* Boots */}
-        <ArmorPiece type={strength.armorType} piece="boots" filled={strength.level >= 4} />
-        {/* Netherite Extra (Glow effect) */}
-        {strength.armorType === "netherite" && (
-          <div className="text-2xl animate-pulse" title="Enchanted!">
-            ✨
-          </div>
-        )}
+    <div className="flex flex-col items-center gap-1 mt-2">
+      <div className="flex gap-[2px]">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <ArmorIcon key={i} filled={i < strengthLevel} />
+        ))}
       </div>
-
-      {/* Strength Label */}
-      <div className="text-center">
-        <p className="font-pixel text-sm">
-          <span
-            className={`${
-              strength.level === 1
-                ? "text-orange-400"
-                : strength.level === 2
-                ? "text-gray-300"
-                : strength.level === 3
-                ? "text-orange-300"
-                : strength.level === 4
-                ? "text-blue-300"
-                : "text-purple-400"
-            }`}
-          >
-            {strength.label}
-          </span>
-        </p>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="w-full bg-black/40 border border-white/10 rounded h-2 overflow-hidden">
-        <div
-          className={`h-full transition-all duration-300 ${
-            strength.level === 1
-              ? "bg-orange-500"
-              : strength.level === 2
-              ? "bg-gray-500"
-              : strength.level === 3
-              ? "bg-orange-500"
-              : strength.level === 4
-              ? "bg-blue-500"
-              : "bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.8)]"
-          }`}
-          style={{ width: `${(strength.score / 120) * 100}%` }}
-        />
-      </div>
+      {password && (
+        <span
+          className="font-pixel uppercase tracking-widest"
+          style={{ fontSize: "10px", color: labelColor, textShadow: "1px 1px 0 #000" }}
+        >
+          {label}
+        </span>
+      )}
     </div>
   );
 }
 
-interface ArmorPieceProps {
-  type: string;
-  piece: "helmet" | "chestplate" | "leggings" | "boots";
-  filled: boolean;
-}
+/**
+ * Matches the exact Minecraft HUD armor bar sprite:
+ *  - Two square shoulder bumps at the top
+ *  - Solid rectangular body, NO arm-hole cutouts
+ *  - Slightly tapered at the bottom (matches the sprite)
+ *
+ * Pixel grid — 9 wide × 7 tall (each cell = 2 CSS px → icon = 18×14)
+ *
+ *   . X X . . . X X .   ← shoulder bumps
+ *   X X X X X X X X X   ← solid (full width)
+ *   X X X X X X X X X
+ *   X X X X X X X X X
+ *   X X X X X X X X X
+ *   . X X X X X X X .   ← slightly narrower
+ *   . . X X X X X . .   ← bottom taper
+ */
+function ArmorIcon({ filled }: { filled: boolean }) {
+  const SHAPE = [
+    [0,1,1,0,0,0,1,1,0],  // row 0 — shoulder bumps
+    [1,1,1,1,1,1,1,1,1],  // row 1 — collar (full)
+    [1,1,1,1,1,1,1,1,1],  // row 2 — chest (solid, no arm holes)
+    [1,1,1,1,1,1,1,1,1],  // row 3 — chest
+    [1,1,1,1,1,1,1,1,1],  // row 4 — chest
+    [0,1,1,1,1,1,1,1,0],  // row 5 — lower (slightly narrower)
+    [0,0,1,1,1,1,1,0,0],  // row 6 — bottom taper
+  ] as const;
 
-function ArmorPiece({ type, piece, filled }: ArmorPieceProps) {
-  const baseClasses =
-    "w-12 h-12 border-2 border-white/30 rounded-sm flex items-center justify-center text-xs font-pixel transition-all duration-300 relative";
+  // ── Filled (silver / iron) palette ──────────────────────────────────
+  // Minecraft uses a top-lit model: top rows brightest, bottom darkest.
+  // No complex per-pixel noise — just clean horizontal bands.
+  const FILLED_ROWS = [
+    "#E0E0E0",  // 0 — shoulder highlight
+    "#C8C8C8",  // 1 — collar
+    "#B8B8B8",  // 2 — upper chest
+    "#A8A8A8",  // 3 — mid chest (slight shadow from collar)
+    "#B0B0B0",  // 4 — lower chest
+    "#A0A0A0",  // 5 — lower body
+    "#909090",  // 6 — bottom shadow
+  ];
 
-  const colors = {
-    leather: "bg-orange-900/50 text-orange-400 border-orange-600/50",
-    chain: "bg-gray-600/50 text-gray-300 border-gray-500/50",
-    iron: "bg-orange-600/50 text-orange-200 border-orange-500/50",
-    diamond: "bg-blue-500/50 text-cyan-200 border-blue-400/50",
-    netherite: "bg-purple-900/60 text-purple-200 border-purple-600/50 shadow-[0_0_8px_rgba(168,85,247,0.6)]",
-  };
+  // ── Empty (dark grey) palette ────────────────────────────────────────
+  const EMPTY_ROWS = [
+    "#5A5A5A",
+    "#484848",
+    "#3C3C3C",
+    "#303030",
+    "#383838",
+    "#2C2C2C",
+    "#202020",
+  ];
 
-  if (!filled) {
-    return (
-      <div className={`${baseClasses} bg-black/40 border-white/10 text-transparent`}>
-        {getPieceLabel(piece)}
-      </div>
-    );
-  }
-
-  return (
-    <div className={`${baseClasses} ${colors[type as keyof typeof colors]}`}>
-      <div className="relative w-full h-full flex items-center justify-center">
-        {/* Pixel art representation using divs */}
-        <PixelArmor piece={piece} type={type} />
-      </div>
-    </div>
-  );
-}
-
-function getPieceLabel(piece: string): string {
-  const labels = {
-    helmet: "H",
-    chestplate: "C",
-    leggings: "L",
-    boots: "B",
-  };
-  return labels[piece as keyof typeof labels] || "";
-}
-
-interface PixelArmorProps {
-  piece: string;
-  type: string;
-}
-
-function PixelArmor({ piece, type }: PixelArmorProps) {
-  // Create simple pixel art using CSS grid patterns
-  const patterns = {
-    helmet: "■□■ □■□ ■□■",
-    chestplate: "■■■ ■■■ ■■■",
-    leggings: "■□■ ■□■ ■□■",
-    boots: "□□□ ■■■ ■■■",
-  };
-
-  const pattern = patterns[piece as keyof typeof patterns] || "";
+  const palette = filled ? FILLED_ROWS : EMPTY_ROWS;
+  const S = 2; // px per cell
 
   return (
-    <span className="text-xs tracking-tight leading-none">
-      {pattern.charAt(0)}
-    </span>
+    <svg
+      width={9 * S}
+      height={7 * S}
+      viewBox={`0 0 ${9 * S} ${7 * S}`}
+      style={{ imageRendering: "pixelated", shapeRendering: "crispEdges", display: "block" }}
+    >
+      {SHAPE.map((row, y) =>
+        row.map((on, x) =>
+          on ? (
+            <rect
+              key={`${x}-${y}`}
+              x={x * S}
+              y={y * S}
+              width={S}
+              height={S}
+              fill={palette[y]}
+              // NO stroke — adjacent filled rects share edges perfectly → solid look
+            />
+          ) : null
+        )
+      )}
+    </svg>
   );
 }

@@ -10,6 +10,8 @@ import { User } from "@supabase/supabase-js";
 
 import Image from "next/image";
 
+const ADMIN_EMAIL = "omkarbichu0612@gmail.com";
+
 export function Navigation() {
   const [user, setUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -37,6 +39,8 @@ export function Navigation() {
     window.location.href = "/";
   };
 
+  const isAdmin = user?.email === ADMIN_EMAIL;
+
   return (
     <nav className="w-full bg-black/60 backdrop-blur-3xl border-b border-white/5 sticky top-0 z-50 shadow-[0_4px_30px_rgba(0,0,0,0.8)]">
       <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
@@ -60,6 +64,14 @@ export function Navigation() {
             {user && (
               <Link href="/dashboard" className="text-gray-300 hover:text-white font-pixel text-sm tracking-widest uppercase transition-all duration-300 hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]">
                 Dashboard
+              </Link>
+            )}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="font-pixel text-sm tracking-widest uppercase transition-all duration-300 text-red-400 hover:text-red-300 hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.7)]"
+              >
+                Admin Panel
               </Link>
             )}
           </div>

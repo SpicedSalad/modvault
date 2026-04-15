@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Buttons";
 import { Trash2 } from "lucide-react";
@@ -56,6 +56,14 @@ function CommentItem({
         onNewReply(data);
         setReplyText("");
         setShowReplyBox(false);
+        
+        if (allComments.length + 1 >= 3) {
+          fetch("/api/ai-insights", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tweak_id: tweakId })
+          }).catch(console.error);
+        }
       }
     } catch (err: any) {
       alert("Error posting reply: " + err.message);
@@ -186,16 +194,29 @@ function CommentItem({
 export function ModComments({ 
   tweakId, 
   initialComments,
-  userId
+  userId,
+  hasInsight = false,
 }: {
   tweakId: string;
   initialComments: any[];
   userId: string | null;
+  hasInsight?: boolean;
 }) {
   const [comments, setComments] = useState(initialComments);
   const [newComment, setNewComment] = useState("");
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
+
+  // Auto-trigger AI if comments already exist but no insight was generated yet
+  useEffect(() => {
+    if (!hasInsight && initialComments.length >= 3) {
+      fetch("/api/ai-insights", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tweak_id: tweakId }),
+      }).catch(console.error);
+    }
+  }, [hasInsight, initialComments.length, tweakId]);
 
   const handlePost = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -215,8 +236,17 @@ export function ModComments({
       
       if (error) throw error;
       if (data) {
-        setComments([data, ...comments]);
+        const updatedComments = [data, ...comments];
+        setComments(updatedComments);
         setNewComment("");
+        
+        if (updatedComments.length >= 3) {
+          fetch("/api/ai-insights", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tweak_id: tweakId })
+          }).catch(console.error);
+        }
       }
     } catch (err: any) {
       alert("Error posting comment: " + err.message);
@@ -230,8 +260,16 @@ export function ModComments({
   };
 
   const handleDeleteComment = (commentId: string) => {
-    // Remove the deleted comment and all its nested replies
-    setComments(prev => prev.filter(c => c.id !== commentId && c.parent_id !== commentId));
+    // Recursively remove the deleted comment and ALL nested descendants
+    setComments(prev => {
+      const idsToRemove = new Set<string>();
+      const collectDescendants = (parentId: string) => {
+        idsToRemove.add(parentId);
+        prev.filter(c => c.parent_id === parentId).forEach(c => collectDescendants(c.id));
+      };
+      collectDescendants(commentId);
+      return prev.filter(c => !idsToRemove.has(c.id));
+    });
   };
 
   // Top-level comments only (no parent_id)

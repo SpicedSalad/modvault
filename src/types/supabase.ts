@@ -6,6 +6,20 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
+// ── Shared application-level interfaces ──────────────────────────────
+
+export interface Tag {
+  id: string;
+  name: string;
+  customDescription?: string;
+}
+
+export interface TweakFileForm {
+  mc_version: string;
+  loader_type: string;
+  download_url: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -33,8 +47,7 @@ export interface Database {
           title: string
           description: string
           category: 'Mod' | 'Datapack' | 'Resource Pack' | 'Shader'
-          drive_link: string
-          tags: string[] | null
+          tags: Json[] | null
           created_at: string
         }
         Insert: {
@@ -43,8 +56,7 @@ export interface Database {
           title: string
           description: string
           category: 'Mod' | 'Datapack' | 'Resource Pack' | 'Shader'
-          drive_link: string
-          tags?: string[] | null
+          tags?: Json[] | null
           created_at?: string
         }
         Update: {
@@ -53,8 +65,7 @@ export interface Database {
           title?: string
           description?: string
           category?: 'Mod' | 'Datapack' | 'Resource Pack' | 'Shader'
-          drive_link?: string
-          tags?: string[] | null
+          tags?: Json[] | null
           created_at?: string
         }
       }
@@ -73,6 +84,32 @@ export interface Database {
           id?: string
           tweak_id?: string
           drive_image_url?: string
+        }
+      }
+      tweak_files: {
+        Row: {
+          id: string
+          tweak_id: string
+          mc_version: string
+          loader_type: string
+          download_url: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          tweak_id: string
+          mc_version: string
+          loader_type: string
+          download_url: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          tweak_id?: string
+          mc_version?: string
+          loader_type?: string
+          download_url?: string
+          created_at?: string
         }
       }
       comments: {

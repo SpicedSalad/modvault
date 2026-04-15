@@ -45,7 +45,7 @@ export default function ProfileEditPage() {
     };
 
     fetchProfile();
-  }, []);
+  }, [supabase]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

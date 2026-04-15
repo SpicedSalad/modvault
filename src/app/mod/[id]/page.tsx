@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { ModInteractive } from "./ModInteractive";
 import { ModComments } from "./ModComments";
-import { convertDriveLink } from "@/lib/utils";
+import { convertDriveLink, parseTag } from "@/lib/utils";
 
 export default async function ModDetailPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
@@ -14,7 +14,8 @@ export default async function ModDetailPage(props: { params: Promise<{ id: strin
     .select(`
       *,
       profiles!tweaks_user_id_fkey ( username, avatar_url ),
-      images ( drive_image_url )
+      images ( drive_image_url ),
+      tweak_files ( * )
     `)
     .eq("id", id)
     .single();
@@ -38,12 +39,14 @@ export default async function ModDetailPage(props: { params: Promise<{ id: strin
     .eq("tweak_id", id)
     .order("created_at", { ascending: true });
 
-  // Fetch or trigger insight
+  // Fetch existing insight
   let insight = null;
-  const { data: existingInsight } = await supabase.from("ai_insights").select("*").eq("tweak_id", id).single();
-  if (existingInsight) {
-    insight = existingInsight;
-  }
+  const { data: existingInsight } = await supabase
+    .from("ai_insights")
+    .select("*")
+    .eq("tweak_id", id)
+    .maybeSingle();
+  if (existingInsight) insight = existingInsight;
 
   const images = tweak.images.map((img: { drive_image_url: string }) => convertDriveLink(img.drive_image_url));
 
@@ -75,19 +78,44 @@ export default async function ModDetailPage(props: { params: Promise<{ id: strin
         <div className="w-full md:w-1/3 space-y-8">
           {/* Action Box */}
           <div className="glass-panel border-pixel-white-glow p-6 flex flex-col items-center relative">
-             <a href={convertDriveLink(tweak.drive_link)} target="_blank" rel="noreferrer" className="w-full relative overflow-hidden group shadow-[0_0_20px_rgba(63,186,84,0.3)] hover:shadow-[0_0_30px_rgba(63,186,84,0.6)] mb-4 bg-grass text-white border-pixel border-black text-center py-4 font-pixel btn-push transition-all">
-               <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mix-blend-overlay pointer-events-none"></div>
-               DOWNLOAD FILE
-             </a>
-             <div className="w-full flex flex-wrap gap-2 justify-center">
-               <span className="bg-black/40 text-gray-300 px-3 py-1 font-sans text-sm border border-white/10 backdrop-blur-sm shadow-sm">
+             <div className="w-full flex-col gap-3 mb-6">
+               <h3 className="text-white font-pixel text-lg mb-4 text-center">Versions</h3>
+               {tweak.tweak_files && tweak.tweak_files.length > 0 ? (
+                 <div className="space-y-3">
+                   {tweak.tweak_files.map((file: any) => (
+                     <div key={file.id} className="bg-black/40 border border-white/10 p-3 flex flex-col gap-2 relative group overflow-hidden shadow-sm hover:border-grass/50 transition-colors">
+                       <div className="flex justify-between items-center">
+                         <span className="font-pixel text-yellow-300 drop-shadow-[0_0_5px_rgba(250,204,21,0.5)] text-sm">v{file.mc_version}</span>
+                         <span className="text-xs font-sans px-2 py-0.5 bg-white/10 rounded-sm text-gray-300">{file.loader_type}</span>
+                       </div>
+                       <a 
+                         href={file.download_url} 
+                         target="_blank" 
+                         rel="noreferrer" 
+                         className="w-full relative overflow-hidden group shadow-[0_0_10px_rgba(63,186,84,0.2)] hover:shadow-[0_0_20px_rgba(63,186,84,0.5)] bg-grass/80 text-white border-pixel border-black text-center py-2 text-xs font-pixel btn-push transition-all mt-1"
+                       >
+                         <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mix-blend-overlay pointer-events-none"></div>
+                         DOWNLOAD
+                       </a>
+                     </div>
+                   ))}
+                 </div>
+               ) : (
+                 <p className="text-gray-500 font-sans text-sm text-center">No downloads available.</p>
+               )}
+             </div>
+             <div className="w-full flex flex-wrap gap-2 justify-center pt-2">
+               <span className="inline-flex items-center bg-black/40 text-gray-300 px-3 py-1 font-sans text-xs border border-white/10 leading-none">
                  {tweak.category}
                </span>
-               {tweak.tags?.map((tag: string) => (
-                 <span key={tag} className="bg-black/40 text-gray-300 px-3 py-1 font-sans text-sm border border-white/10 backdrop-blur-sm shadow-sm">
-                   #{tag}
-                 </span>
-               ))}
+               {tweak.tags?.map((tag: unknown, idx: number) => {
+                 const parsedTag = parseTag(tag);
+                 return (
+                   <span key={idx} className="inline-flex items-center bg-black/40 text-gray-300 px-3 py-1 font-sans text-xs border border-white/10 leading-none">
+                     #{parsedTag}
+                   </span>
+                 );
+               })}
              </div>
           </div>
 
@@ -107,9 +135,8 @@ export default async function ModDetailPage(props: { params: Promise<{ id: strin
             }}
           >
              <div className="absolute top-0 right-0 w-16 h-16 bg-gold/10 rounded-bl-full mix-blend-screen" />
-             <h2 className="font-pixel text-transparent bg-clip-text bg-gradient-to-r from-gold to-yellow-200 drop-shadow-[0_0_15px_rgba(255,170,0,0.3)] text-xl flex items-center gap-2 mb-4 py-1 leading-normal">
-               {/* Animated star or icon */}
-               <span className="text-2xl drop-shadow-none text-gold">✨</span> Librarian&apos;s Report
+             <h2 className="font-pixel text-transparent bg-clip-text bg-gradient-to-r from-gold to-yellow-200 drop-shadow-[0_0_15px_rgba(255,170,0,0.3)] text-xl mb-4 py-1 leading-normal">
+               Librarian&apos;s Report
              </h2>
              {insight ? (
                <div className="space-y-4">
@@ -138,7 +165,7 @@ export default async function ModDetailPage(props: { params: Promise<{ id: strin
       {/* Discussion / Comments Row */}
       <div className="mt-12 glass-panel border-pixel-white-glow p-6 max-w-3xl relative">
         <h2 className="font-pixel text-transparent bg-clip-text bg-gradient-to-r from-gold to-yellow-200 drop-shadow-[0_0_15px_rgba(255,170,0,0.3)] text-2xl mb-6 py-1 leading-normal">Discussion</h2>
-        <ModComments tweakId={id} initialComments={comments || []} userId={user?.id || null} />
+        <ModComments tweakId={id} initialComments={comments || []} userId={user?.id || null} hasInsight={!!insight} />
       </div>
 
     </div>

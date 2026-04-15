@@ -144,11 +144,23 @@ function ProceduralCreeper({ onExplode }: { onExplode: () => void }) {
     config: { tension: state === "EXPLODING" ? 400 : 300, friction: 15 },
   });
 
-  useFrame((sceneState) => {
+  const pointerRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handlePointerMove = (e: PointerEvent) => {
+      pointerRef.current.x = (e.clientX / window.innerWidth) * 2 - 1;
+      pointerRef.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    };
+    window.addEventListener("pointermove", handlePointerMove);
+    return () => window.removeEventListener("pointermove", handlePointerMove);
+  }, []);
+
+  useFrame(() => {
     if (state === "IDLE" && headRef.current) {
-      // Clamp pointer values to prevent extreme rotations when scrolling the canvas vertically
-      const clampedX = Math.max(-1.5, Math.min(1.5, sceneState.pointer.x));
-      const clampedY = Math.max(-1.5, Math.min(1.5, sceneState.pointer.y));
+      // Use window-relative pointer to prevent extreme rotations when scrolling the canvas vertically
+      // Multiply by 2 to restore sensitivity since window coords are wider than canvas coords
+      const clampedX = Math.max(-1.5, Math.min(1.5, pointerRef.current.x * 2));
+      const clampedY = Math.max(-1.5, Math.min(1.5, pointerRef.current.y * 2));
 
       const targetY = (clampedX * Math.PI) / 3;
       const targetX = - (clampedY * Math.PI) / 6;
@@ -466,18 +478,29 @@ function Particles({ active }: { active: boolean }) {
   );
 }
 
-export function InteractiveCreeper() {
+export function InteractiveCreeper({ onExplode }: { onExplode?: () => void }) {
   const [explosionCloud, setExplosionCloud] = useState(false);
 
   const triggerExplosion = () => {
     setExplosionCloud(true);
+    onExplode?.();
     // Component lifecycle unmount bounds (Cloud handles it organically, but standard boundary clears after 1.6)
     setTimeout(() => setExplosionCloud(false), 1600);
   };
 
   return (
-    <div className={`relative w-full h-[500px] flex items-center justify-center`}>
-      <Canvas shadows camera={{ position: [0, 4, 12], fov: 40 }}>
+    <div 
+      className={`relative w-full h-[500px] flex items-center justify-center`}
+      style={{ position: "relative", transform: "translateZ(0)" }}
+    >
+      <div className="absolute top-4 left-4 z-10 font-pixel text-zinc-500/60 text-xs pointer-events-none select-none tracking-widest animate-pulse">
+        try clicking on the creeper....
+      </div>
+      <Canvas 
+        shadows 
+        camera={{ position: [0, 4, 12], fov: 40 }}
+        eventPrefix="client"
+      >
         <ambientLight intensity={1.2} />
         <directionalLight position={[10, 10, 10]} intensity={2.5} castShadow />
         <Environment preset="city" />

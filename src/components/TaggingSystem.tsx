@@ -3,12 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown } from "lucide-react";
-
-interface Tag {
-  id: string;
-  name: string;
-  customDescription?: string;
-}
+import { Tag } from "@/types/supabase";
 
 interface TaggingSystemProps {
   selectedTags: Tag[];

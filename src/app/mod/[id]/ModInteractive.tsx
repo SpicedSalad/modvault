@@ -42,8 +42,10 @@ export function ModInteractive({
     if (newVote === 0) {
       await supabase.from("votes").delete().match({ user_id: userId, tweak_id: tweakId });
     } else {
-      await supabase.from("votes").delete().match({ user_id: userId, tweak_id: tweakId });
-      await supabase.from("votes").insert({ user_id: userId, tweak_id: tweakId, vote_value: newVote });
+      await supabase.from("votes").upsert(
+        { user_id: userId, tweak_id: tweakId, vote_value: newVote },
+        { onConflict: "user_id,tweak_id" }
+      );
     }
   };
 

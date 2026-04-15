@@ -16,3 +16,20 @@ export function convertDriveLink(url: string | null | undefined): string {
   }
   return url;
 }
+
+export function parseTag(tagRaw: any): string {
+  if (typeof tagRaw === 'string') {
+    if (tagRaw.startsWith('{')) {
+      try {
+        const obj = JSON.parse(tagRaw);
+        return obj.name || tagRaw;
+      } catch (e) {
+        return tagRaw;
+      }
+    }
+    return tagRaw;
+  } else if (tagRaw && typeof tagRaw === 'object') {
+    return tagRaw.name || String(tagRaw);
+  }
+  return String(tagRaw);
+}

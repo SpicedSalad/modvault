@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Database } from "@/types/supabase";
-import { convertDriveLink } from "@/lib/utils";
+import { convertDriveLink, parseTag } from "@/lib/utils";
 import { DefaultBlockPlaceholder } from "@/components/DefaultBlockPlaceholder";
 import { ArrowUp, MessageSquare } from "lucide-react";
 import { useRef, useState } from "react";
@@ -118,11 +118,14 @@ export function ModCard({
           </p>
           
           <div className="flex flex-wrap gap-2 mb-4">
-            {tweak.tags?.slice(0, 3).map((tag) => (
-              <span key={tag} className="text-xs bg-[#1a1a1a] text-gray-300 px-2 py-1 rounded-sm border border-gray-700">
-                #{tag}
-              </span>
-            ))}
+            {tweak.tags?.slice(0, 3).map((tag, idx) => {
+              const parsedTag = parseTag(tag);
+              return (
+                <span key={idx} className="text-xs bg-[#1a1a1a] text-gray-300 px-2 py-1 rounded-sm border border-gray-700">
+                  #{parsedTag}
+                </span>
+              );
+            })}
           </div>
 
           <div className="flex items-center justify-between text-gray-400 text-sm font-sans mt-auto border-t border-gray-700 pt-3">
