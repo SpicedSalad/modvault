@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "./ui/Buttons";
-import { Search } from "lucide-react";
+import { Search, Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +13,7 @@ import Image from "next/image";
 const ADMIN_EMAIL = "omkarbichu0612@gmail.com";
 
 export function Navigation() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
@@ -96,6 +97,14 @@ export function Navigation() {
         </div>
 
         <div className="flex items-center space-x-4">
+          <div className="md:hidden">
+            <button 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="p-2 text-gray-400 hover:text-white transition-colors"
+            >
+              {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
           {user ? (
             <button 
               onClick={handleLogout}
@@ -114,6 +123,47 @@ export function Navigation() {
           )}
         </div>
       </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden absolute top-24 left-0 w-full bg-[#111111]/95 backdrop-blur-3xl border-b border-white/5 flex flex-col items-center py-8 space-y-6 shadow-2xl">
+          <Link href="/discover" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-white font-pixel text-lg tracking-widest uppercase transition-all duration-300 hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]">
+            Discover
+          </Link>
+          {user && (
+            <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-300 hover:text-white font-pixel text-lg tracking-widest uppercase transition-all duration-300 hover:drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]">
+              Dashboard
+            </Link>
+          )}
+          {isAdmin && (
+            <Link
+              href="/admin"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="font-pixel text-lg tracking-widest uppercase transition-all duration-300 text-red-400 hover:text-red-300 hover:drop-shadow-[0_0_10px_rgba(239,68,68,0.7)]"
+            >
+              Admin Panel
+            </Link>
+          )}
+          <div className="w-full px-8 pt-2">
+            <div className="relative group transition-all duration-300 max-w-sm mx-auto">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5 group-focus-within:text-grass transition-colors duration-300" />
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    setIsMobileMenuOpen(false);
+                    router.push(`/discover?search=${encodeURIComponent(searchQuery.trim())}`);
+                  }
+                }}
+                placeholder="Search mods..." 
+                className="w-full bg-black/40 border border-white/5 text-white py-3 pl-10 pr-4 outline-none font-sans placeholder-gray-600 rounded-md focus:border-grass focus:ring-1 focus:ring-grass focus:shadow-[0_0_15px_rgba(63,186,84,0.4)] transition-all duration-300 backdrop-blur-md"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   );
 }
