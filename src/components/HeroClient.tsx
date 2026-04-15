@@ -68,9 +68,9 @@ export function HeroClient() {
   return (
     <div className="relative z-10 w-full max-w-7xl px-4 mx-auto flex flex-col md:flex-row items-center justify-between">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1, type: "spring" }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1 }}
         className="w-full md:w-1/2 pointer-events-auto"
       >
         <InteractiveCreeper onExplode={handleCreeperExplode} />
