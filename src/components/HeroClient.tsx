@@ -82,7 +82,7 @@ export function HeroClient() {
         transition={{ duration: 0.8, delay: 0.2 }}
         className="md:w-1/2 text-center md:text-left flex flex-col items-center md:items-start space-y-6"
       >
-        <h1 className="text-5xl md:text-7xl font-pixel font-normal text-white leading-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)]">
+        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-pixel font-normal text-white leading-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)]">
           MODERN <br/> 
           <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-[#3fba54] to-emerald-200 drop-shadow-[0_0_30px_rgba(63,186,84,0.4)]">
             MINECRAFT
@@ -90,14 +90,14 @@ export function HeroClient() {
           TWEAKS
         </h1>
         
-        <p className="text-xl text-zinc-400 font-sans tracking-wide leading-relaxed max-w-xl">
+        <p className="text-base sm:text-lg lg:text-xl text-zinc-400 font-sans tracking-wide leading-relaxed max-w-xl">
           Ascend beyond vanilla. Discover an ultimate curated repository of flagship mods, absolute resource packs, and god-tier shaders.
         </p>
 
         <div className="pt-4">
           <button 
             onClick={scrollToDiscover} 
-            className="relative flex items-center justify-center px-12 py-5 font-pixel text-xl font-bold tracking-widest text-[#1a1a1a] bg-gradient-to-r from-emerald-400 to-[#3fba54] rounded-sm overflow-hidden group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(63,186,84,0.5)] hover:shadow-[0_0_50px_rgba(63,186,84,0.8)] border border-emerald-300/30"
+            className="relative flex items-center justify-center px-8 py-3.5 lg:px-12 lg:py-5 font-pixel text-base lg:text-xl font-bold tracking-widest text-[#1a1a1a] bg-gradient-to-r from-emerald-400 to-[#3fba54] rounded-sm overflow-hidden group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_30px_rgba(63,186,84,0.5)] hover:shadow-[0_0_50px_rgba(63,186,84,0.8)] border border-emerald-300/30"
           >
             <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 mix-blend-overlay"></div>
             <span className="relative z-10 mt-1">ENTER DISCOVER</span>
