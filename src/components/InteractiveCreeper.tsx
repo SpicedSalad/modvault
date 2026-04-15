@@ -144,23 +144,29 @@ function ProceduralCreeper({ onExplode }: { onExplode: () => void }) {
     config: { tension: state === "EXPLODING" ? 400 : 300, friction: 15 },
   });
 
-  const pointerRef = useRef({ x: 0, y: 0 });
+  const pointerRef = useRef({ x: 0, y: 0, hasMoved: false });
 
   useEffect(() => {
     const handlePointerMove = (e: PointerEvent) => {
-      pointerRef.current.x = (e.clientX / window.innerWidth) * 2 - 1;
-      pointerRef.current.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      const canvas = document.querySelector('canvas');
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      
+      pointerRef.current.x = (e.clientX - centerX) / (rect.width / 2);
+      pointerRef.current.y = -(e.clientY - centerY) / (rect.height / 2);
+      pointerRef.current.hasMoved = true;
     };
     window.addEventListener("pointermove", handlePointerMove);
     return () => window.removeEventListener("pointermove", handlePointerMove);
   }, []);
 
   useFrame(() => {
-    if (state === "IDLE" && headRef.current) {
-      // Use window-relative pointer to prevent extreme rotations when scrolling the canvas vertically
-      // Multiply by 2 to restore sensitivity since window coords are wider than canvas coords
-      const clampedX = Math.max(-1.5, Math.min(1.5, pointerRef.current.x * 2));
-      const clampedY = Math.max(-1.5, Math.min(1.5, pointerRef.current.y * 2));
+    if (state === "IDLE" && headRef.current && pointerRef.current.hasMoved) {
+      // Use physical mouse pointer bounded to canvas center to prevent scroll jumps
+      const clampedX = Math.max(-1.5, Math.min(1.5, pointerRef.current.x));
+      const clampedY = Math.max(-1.5, Math.min(1.5, pointerRef.current.y));
 
       const targetY = (clampedX * Math.PI) / 3;
       const targetX = - (clampedY * Math.PI) / 6;
