@@ -66,7 +66,7 @@ export function HeroClient() {
   }, [showDeathScreen]);
 
   return (
-    <div className="relative z-10 w-full max-w-7xl px-4 mx-auto flex flex-col md:flex-row items-center justify-between scale-90 origin-top md:origin-center xl:scale-100">
+    <div className="relative z-10 w-full max-w-7xl px-4 mx-auto flex flex-col md:flex-row items-center justify-between">
       <motion.div 
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -80,7 +80,7 @@ export function HeroClient() {
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, delay: 0.2 }}
-        className="md:w-1/2 text-center md:text-left flex flex-col items-center md:items-start space-y-6"
+        className="md:w-1/2 text-center md:text-left flex flex-col items-center md:items-start space-y-6 scale-90 origin-top md:origin-left xl:scale-100"
       >
         <h1 className="text-4xl sm:text-5xl lg:text-7xl font-pixel font-normal text-white leading-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.8)]">
           MODERN <br/> 
